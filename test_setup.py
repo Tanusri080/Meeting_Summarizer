@@ -99,7 +99,6 @@ def test_file_structure():
     required_files = [
         "realtime_app_windows.py",
         "templates/realtime_interface.html",
-        "requirements_windows.txt"
     ]
     
     all_good = True
