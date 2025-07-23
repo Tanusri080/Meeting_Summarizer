@@ -188,7 +188,7 @@ def handle_audio_data(data):
         emit('error', {'message': f'Error processing audio: {str(e)}'})
 
 @socketio.on('stop_recording')
-def handle_stop_recording():
+def handle_stop_recording(data=None):
     session_id = request.sid
     print(f"🛑 Stop recording requested by {session_id}")
     
@@ -249,7 +249,7 @@ def handle_stop_recording():
         emit('error', {'message': f'Analysis failed: {str(e)}'})
 
 @socketio.on('download_results')
-def handle_download_results():
+def handle_download_results(data=None):
     session_id = request.sid
     
     if session_id not in active_sessions:
