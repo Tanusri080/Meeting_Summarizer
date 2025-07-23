@@ -1,0 +1,17 @@
+streamlit
+flask
+flask-socketio
+faster-whisper
+transformers
+torch
+numpy
+scipy
+textblob
+vaderSentiment
+python-socketio
+eventlet
+librosa
+scikit-learn
+pydub
+sounddevice
+pyaudio-fork
