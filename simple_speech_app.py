@@ -132,7 +132,7 @@ def process_audio_simple(audio_bytes):
 
 @app.route('/')
 def index():
-    return render_template('realtime_interface_fixed.html')
+    return render_template('realtime_interface.html')
 
 @socketio.on('connect')
 def handle_connect():
