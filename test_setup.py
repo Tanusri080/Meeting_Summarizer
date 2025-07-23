@@ -5,7 +5,6 @@ Run this first to identify issues before running the main application
 """
 
 import sys
-import subprocess
 import importlib.util
 
 def check_python_version():
@@ -113,31 +112,30 @@ def test_file_structure():
 
 def provide_solutions():
     """Provide solutions for common issues"""
-    print("\n=== Solutions ===")
-    print("If you see missing dependencies above, try these commands in order:")
+    print("\n=== SOLUTIONS ===")
+    print("If you see missing dependencies above, follow these steps:")
     print()
-    print("1. Create/activate virtual environment:")
+    print("STEP 1: Create virtual environment (if not exists)")
     print("   python -m venv speech_env")
+    print()
+    print("STEP 2: Activate virtual environment")
     print("   speech_env\\Scripts\\activate")
     print()
-    print("2. Upgrade pip:")
-    print("   python -m pip install --upgrade pip")
-    print()
-    print("3. Install dependencies step by step:")
+    print("STEP 3: Install dependencies one by one:")
+    print("   pip install --upgrade pip")
     print("   pip install flask flask-socketio")
     print("   pip install numpy scipy")
     print("   pip install torch --index-url https://download.pytorch.org/whl/cpu")
     print("   pip install transformers faster-whisper")
     print("   pip install textblob vaderSentiment")
     print("   pip install librosa scikit-learn")
-    print("   pip install sounddevice pydub")
+    print("   pip install sounddevice python-socketio eventlet")
     print()
-    print("4. If you get Visual C++ errors:")
-    print("   - Install Microsoft C++ Build Tools")
-    print("   - Or try: pip install --only-binary=all [package_name]")
-    print()
-    print("5. Download NLTK data:")
+    print("STEP 4: Download NLTK data")
     print("   python -c \"import nltk; nltk.download('punkt'); nltk.download('vader_lexicon')\"")
+    print()
+    print("STEP 5: Test again")
+    print("   python test_setup.py")
 
 def main():
     """Main diagnostic function"""
@@ -156,11 +154,14 @@ def main():
     print("=" * 50)
     
     if python_ok and basic_ok and ai_ok and audio_ok and files_ok:
-        print("🎉 All checks passed! You should be able to run the application.")
-        print("Run: python realtime_app_windows.py")
+        print("🎉 ALL CHECKS PASSED!")
+        print("You can run: python realtime_app_windows.py")
+        print("Then open browser to: http://localhost:5000")
     else:
-        print("⚠️  Some issues found. See solutions below.")
+        print("⚠️  ISSUES FOUND - See solutions below")
         provide_solutions()
+    
+    print("\n" + "=" * 50)
 
 if __name__ == "__main__":
     main()
