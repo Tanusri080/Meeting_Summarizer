@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Speech Analysis Interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 150px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.recording {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status.processing {
+            background: #cce5ff;
+            color: #004085;
+            border: 1px solid #99d6ff;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .transcript-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            min-height: 200px;
+        }
+
+        .transcript-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .live-transcript {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 150px;
+            border: 2px dashed #dee2e6;
+            color: #6c757d;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .live-transcript.active {
+            border-color: #28a745;
+            color: #495057;
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .result-card h4 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .sentiment-positive {
+            color: #28a745;
+        }
+
+        .sentiment-negative {
+            color: #dc3545;
+        }
+
+        .sentiment-neutral {
+            color: #6c757d;
+        }
+
+        .download-section {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .download-section {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-microphone"></i> Real-Time Speech Analysis</h1>
+            <p>Speak naturally and get instant transcription, summary, and sentiment analysis</p>
+        </div>
+
+        <div class="main-content">
+            <div class="status connected" id="status">
+                <i class="fas fa-circle"></i> Ready to start recording
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-primary" id="startBtn">
+                    <i class="fas fa-play"></i> Start Recording
+                </button>
+                <button class="btn btn-danger" id="stopBtn" disabled>
+                    <i class="fas fa-stop"></i> Stop Recording
+                </button>
+                <button class="btn btn-secondary" id="clearBtn">
+                    <i class="fas fa-refresh"></i> Clear All
+                </button>
+            </div>
+
+            <div class="transcript-section">
+                <h3><i class="fas fa-comments"></i> Live Transcription</h3>
+                <div class="live-transcript" id="liveTranscript">
+                    Click "Start Recording" to begin live transcription...
+                </div>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <div class="results-grid">
+                    <div class="result-card">
+                        <h4><i class="fas fa-file-alt"></i> Summary</h4>
+                        <div id="summaryContent">No summary available yet.</div>
+                    </div>
+                    <div class="result-card">
+                        <h4><i class="fas fa-heart"></i> Sentiment Analysis</h4>
+                        <div id="sentimentContent">No sentiment analysis available yet.</div>
+                    </div>
+                </div>
+
+                <div class="download-section">
+                    <button class="btn btn-secondary" id="downloadBtn">
+                        <i class="fas fa-download"></i> Download Results
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO
+        const socket = io();
+        
+        // DOM elements
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const status = document.getElementById('status');
+        const liveTranscript = document.getElementById('liveTranscript');
+        const resultsSection = document.getElementById('resultsSection');
+        const summaryContent = document.getElementById('summaryContent');
+        const sentimentContent = document.getElementById('sentimentContent');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // Variables
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioStream = null;
+        let audioContext = null;
+        let processor = null;
+
+        // Socket events
+        socket.on('connect', () => {
+            updateStatus('connected', 'Connected! Ready to start recording.');
+        });
+
+        socket.on('disconnect', () => {
+            updateStatus('error', 'Disconnected from server');
+        });
+
+        socket.on('status', (data) => {
+            updateStatus('connected', data.message);
+        });
+
+        socket.on('transcription', (data) => {
+            console.log('Received transcription:', data);
+            appendToTranscript(data.text, data.timestamp);
+        });
+
+        socket.on('analysis_complete', (data) => {
+            console.log('Analysis complete:', data);
+            displayResults(data);
+            updateStatus('connected', 'Analysis complete!');
+        });
+
+        socket.on('error', (data) => {
+            console.error('Server error:', data);
+            updateStatus('error', data.message);
+        });
+
+        socket.on('download_ready', (data) => {
+            downloadFile(data.filename, data.content);
+        });
+
+        // Button event listeners
+        startBtn.addEventListener('click', startRecording);
+        stopBtn.addEventListener('click', stopRecording);
+        clearBtn.addEventListener('click', clearAll);
+        downloadBtn.addEventListener('click', downloadResults);
+
+        // Functions
+        async function startRecording() {
+            try {
+                console.log('Starting recording...');
+                
+                // Get audio stream
+                audioStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 16000
+                    } 
+                });
+
+                // Create audio context
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(audioStream);
+                
+                // Create script processor
+                processor = audioContext.createScriptProcessor(4096, 1, 1);
+                
+                processor.onaudioprocess = function(event) {
+                    if (!isRecording) return;
+                    
+                    const inputBuffer = event.inputBuffer;
+                    const inputData = inputBuffer.getChannelData(0);
+                    
+                    // Convert float32 to int16
+                    const int16Data = new Int16Array(inputData.length);
+                    for (let i = 0; i < inputData.length; i++) {
+                        int16Data[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+                    }
+                    
+                    // Convert to base64
+                    const audioBase64 = btoa(String.fromCharCode.apply(null, new Uint8Array(int16Data.buffer)));
+                    
+                    // Send to server
+                    socket.emit('audio_data', {
+                        audio: audioBase64
+                    });
+                };
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                isRecording = true;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                liveTranscript.classList.add('active');
+                liveTranscript.textContent = 'Listening...';
+                updateStatus('recording', 'Recording in progress... Speak now!');
+
+                console.log('Recording started successfully');
+
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                updateStatus('error', 'Error accessing microphone: ' + error.message);
+            }
+        }
+
+        function stopRecording() {
+            console.log('Stopping recording...');
+            
+            if (isRecording) {
+                isRecording = false;
+                
+                if (processor) {
+                    processor.disconnect();
+                    processor = null;
+                }
+                
+                if (audioContext) {
+                    audioContext.close();
+                    audioContext = null;
+                }
+                
+                if (audioStream) {
+                    audioStream.getTracks().forEach(track => track.stop());
+                    audioStream = null;
+                }
+                
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                liveTranscript.classList.remove('active');
+                updateStatus('processing', 'Processing audio...');
+
+                socket.emit('stop_recording');
+                console.log('Recording stopped');
+            }
+        }
+
+        function clearAll() {
+            liveTranscript.textContent = 'Click "Start Recording" to begin live transcription...';
+            liveTranscript.classList.remove('active');
+            resultsSection.style.display = 'none';
+            updateStatus('connected', 'Ready to start new session');
+        }
+
+        function updateStatus(type, message) {
+            status.className = `status ${type}`;
+            status.innerHTML = `<i class="fas fa-circle"></i> ${message}`;
+        }
+
+        function appendToTranscript(text, timestamp) {
+            if (text && text.trim()) {
+                const currentContent = liveTranscript.textContent;
+                if (currentContent === 'Listening...') {
+                    liveTranscript.textContent = text;
+                } else {
+                    liveTranscript.textContent = currentContent + ' ' + text;
+                }
+                liveTranscript.scrollTop = liveTranscript.scrollHeight;
+            }
+        }
+
+        function displayResults(data) {
+            resultsSection.style.display = 'block';
+
+            // Display summary
+            summaryContent.textContent = data.summary || 'No summary available';
+
+            // Display sentiment
+            const sentiment = data.sentiment;
+            const sentimentClass = `sentiment-${sentiment.overall.toLowerCase()}`;
+            
+            sentimentContent.innerHTML = `
+                <div class="${sentimentClass}">
+                    <strong>Overall: ${sentiment.overall}</strong>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.9em;">
+                    <div>Positive: ${(sentiment.positive * 100).toFixed(1)}%</div>
+                    <div>Neutral: ${(sentiment.neutral * 100).toFixed(1)}%</div>
+                    <div>Negative: ${(sentiment.negative * 100).toFixed(1)}%</div>
+                </div>
+            `;
+        }
+
+        function downloadResults() {
+            socket.emit('download_results');
+        }
+
+        function downloadFile(filename, content) {
+            const blob = new Blob([content], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

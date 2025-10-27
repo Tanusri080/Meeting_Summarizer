@@ -1,15 +1,11 @@
 streamlit
-openai-whisper
-sounddevice
-numpy
-scipy
 flask
 flask-socketio
 faster-whisper
 transformers
 torch
-pyaudio
-webrtcvad
+numpy
+scipy
 textblob
 vaderSentiment
 python-socketio
@@ -17,4 +13,5 @@ eventlet
 librosa
 scikit-learn
 pydub
-ffmpeg-python
+sounddevice
+pyaudio-fork
